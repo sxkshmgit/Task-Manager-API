@@ -15,6 +15,16 @@ A full-stack Task Manager built to practice **Python, FastAPI, Pydantic, REST AP
 - Interactive Swagger/OpenAPI documentation
 - Simple HTML/JavaScript frontend
 
+## Screenshots
+
+### Task Manager UI
+
+![Task Manager UI](screenshots/Screenshot%202026-09-17%20145241.png)
+
+### Swagger API Documentation
+
+![Swagger API Documentation](screenshots/Screenshot%202026-09-17%20144941.png)
+
 ## Project Structure
 
 ```text
@@ -22,6 +32,7 @@ Task-Manager-API/
 ├── main.py
 ├── models.py
 ├── index.html
+├── screenshots/
 └── routers/
     ├── __init__.py
     └── tasks.py

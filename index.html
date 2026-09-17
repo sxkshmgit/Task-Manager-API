@@ -1,100 +1,243 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Task Manager</title>
-    <style>
-        body { font-family: Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 0 20px; }
-        h1 { margin-bottom: 20px; }
-        .filters { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-        input, select, button { padding: 10px; border: 1px solid #ccc; border-radius: 6px; }
-        .task { border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin: 10px 0; }
-        .task h3 { margin: 0 0 8px; }
-        .meta { font-size: 14px; margin-bottom: 10px; }
-        button { cursor: pointer; }
-    </style>
+<meta charset="UTF-8">
+<title>Task Manager</title>
+<style>
+  body {
+    font-family: -apple-system, "Segoe UI", sans-serif;
+    max-width: 600px;
+    margin: 50px auto;
+    background: #f4f5f7;
+    color: #222;
+    padding: 0 16px;
+  }
+  h1 { text-align: center; }
+  #stats { text-align: center; color: #777; margin-bottom: 16px; }
+  #error { display: none; background: #fde8e8; color: #a12626; padding: 10px; border-radius: 6px; margin-bottom: 14px; }
+
+  form, #filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  input, select, button {
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 14px;
+  }
+  button {
+    background: #4a90e2;
+    color: white;
+    border: none;
+    cursor: pointer;
+  }
+  button:hover { background: #3a7bc8; }
+
+  ul { list-style: none; padding: 0; }
+  li {
+    background: white;
+    padding: 12px;
+    margin-bottom: 8px;
+    border-radius: 6px;
+  }
+  .top { display: flex; justify-content: space-between; align-items: center; }
+  .done { text-decoration: line-through; color: #999; }
+  .badge { font-size: 12px; background: #eee; padding: 2px 8px; border-radius: 10px; margin-right: 6px; }
+</style>
 </head>
 <body>
-    <h1>Task Manager</h1>
 
-    <div class="filters">
-        <input id="search" type="text" placeholder="Search tasks...">
-        <select id="filterStatus">
-            <option value="">All statuses</option>
-            <option value="todo">To Do</option>
-            <option value="in_progress">In Progress</option>
-            <option value="done">Done</option>
-        </select>
-        <select id="filterPriority">
-            <option value="">All priorities</option>
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
-        </select>
-        <select id="sortBy">
-            <option value="created_at">Created</option>
-            <option value="title">Title</option>
-            <option value="due_date">Due Date</option>
-            <option value="priority">Priority</option>
-        </select>
+<h1>Task Manager</h1>
+<div id="stats"></div>
+<div id="error">Could not reach the server. Is it running?</div>
+
+<form id="taskForm">
+  <input type="text" id="title" placeholder="Task title" required>
+  <input type="text" id="description" placeholder="Description">
+  <select id="priority">
+    <option value="low">Low</option>
+    <option value="medium" selected>Medium</option>
+    <option value="high">High</option>
+  </select>
+  <input type="date" id="dueDate">
+  <button type="submit">Add</button>
+</form>
+
+<div id="filters">
+  <input type="text" id="search" placeholder="Search...">
+  <select id="filterStatus">
+    <option value="">All statuses</option>
+    <option value="todo">To do</option>
+    <option value="in_progress">In progress</option>
+    <option value="done">Done</option>
+  </select>
+  <select id="filterPriority">
+    <option value="">All priorities</option>
+    <option value="low">Low</option>
+    <option value="medium">Medium</option>
+    <option value="high">High</option>
+  </select>
+  <select id="sortBy">
+    <option value="created_at">Sort: Created</option>
+    <option value="due_date">Sort: Due date</option>
+    <option value="priority">Sort: Priority</option>
+    <option value="title">Sort: Title</option>
+  </select>
+</div>
+
+<ul id="taskList"></ul>
+
+<script>
+const API_URL = "http://127.0.0.1:8000";
+let editId = null;
+
+function getFilters() {
+    const params = new URLSearchParams();
+
+    const search = document.getElementById("search").value;
+    const status = document.getElementById("filterStatus").value;
+    const priority = document.getElementById("filterPriority").value;
+    const sortBy = document.getElementById("sortBy").value;
+
+    if (search) params.append("search", search);
+    if (status) params.append("status", status);
+    if (priority) params.append("priority", priority);
+    if (sortBy) params.append("sort_by", sortBy);
+
+    return params.toString();
+}
+
+async function loadTasks() {
+  document.getElementById("error").style.display = "none";
+  try {
+    let res = await fetch(API_URL + "/tasks?" + getFilters());
+    if (!res.ok) throw new Error("Failed to load tasks");
+    let tasks = await res.json();
+    showTasks(tasks);
+  } catch (err) {
+    document.getElementById("taskList").innerHTML = "";
+    document.getElementById("error").style.display = "block";
+  }
+}
+
+function showTasks(tasks) {
+  let list = document.getElementById("taskList");
+  list.innerHTML = "";
+
+  if (tasks.length === 0) {
+    list.innerHTML = "<li>No tasks found.</li>";
+  }
+
+  for (let task of tasks) {
+    let li = document.createElement("li");
+    li.innerHTML = (task.id === editId) ? editForm(task) : taskItem(task);
+    list.appendChild(li);
+  }
+
+  let done = 0;
+  for (let task of tasks) {
+    if (task.status === "done") done++;
+  }
+  document.getElementById("stats").innerText = tasks.length + " tasks, " + done + " done";
+}
+
+function taskItem(task) {
+  return `
+    <div class="top">
+      <b class="${task.status === 'done' ? 'done' : ''}">${task.title}</b>
+      <div>
+        <button onclick="editTask(${task.id})">Edit</button>
+        <button onclick="deleteTask(${task.id})">Delete</button>
+      </div>
     </div>
+    <p>${task.description ? task.description : ""}</p>
+    <span class="badge">${task.priority}</span>
+    <select onchange="changeStatus(${task.id}, this.value)">
+      <option value="todo" ${task.status === "todo" ? "selected" : ""}>To do</option>
+      <option value="in_progress" ${task.status === "in_progress" ? "selected" : ""}>In progress</option>
+      <option value="done" ${task.status === "done" ? "selected" : ""}>Done</option>
+    </select>
+    ${task.due_date ? "<span> Due: " + task.due_date + "</span>" : ""}
+  `;
+}
 
-    <div id="tasks"></div>
+function editForm(task) {
+  return `
+    <input id="editTitle" value="${task.title}">
+    <input id="editDesc" value="${task.description || ""}">
+    <select id="editPriority">
+      <option value="low" ${task.priority === "low" ? "selected" : ""}>Low</option>
+      <option value="medium" ${task.priority === "medium" ? "selected" : ""}>Medium</option>
+      <option value="high" ${task.priority === "high" ? "selected" : ""}>High</option>
+    </select>
+    <input type="date" id="editDue" value="${task.due_date || ""}">
+    <button onclick="saveTask(${task.id})">Save</button>
+    <button onclick="cancelEdit()">Cancel</button>
+  `;
+}
 
-    <script>
-        const API_URL = "http://127.0.0.1:8000";
+function editTask(id) {
+  editId = id;
+  loadTasks();
+}
 
-        function getFilters() {
-            const params = new URLSearchParams();
+function cancelEdit() {
+  editId = null;
+  loadTasks();
+}
 
-            const search = document.getElementById("search").value;
-            const status = document.getElementById("filterStatus").value;
-            const priority = document.getElementById("filterPriority").value;
-            const sortBy = document.getElementById("sortBy").value;
+async function saveTask(id) {
+  let changes = {
+    title: document.getElementById("editTitle").value,
+    description: document.getElementById("editDesc").value,
+    priority: document.getElementById("editPriority").value,
+    due_date: document.getElementById("editDue").value
+  };
+  editId = null;
+  await fetch(API_URL + "/tasks/" + id, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(changes)
+  });
+  loadTasks();
+}
 
-            if (search) params.append("search", search);
-            if (status) params.append("status", status);
-            if (priority) params.append("priority", priority);
-            if (sortBy) params.append("sort_by", sortBy);
+async function changeStatus(id, status) {
+  await fetch(API_URL + "/tasks/" + id, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status: status })
+  });
+  loadTasks();
+}
 
-            return params.toString();
-        }
+async function deleteTask(id) {
+  await fetch(API_URL + "/tasks/" + id, { method: "DELETE" });
+  loadTasks();
+}
 
-        async function loadTasks() {
-            try {
-                const res = await fetch(API_URL + "/tasks?" + getFilters());
-                const data = await res.json();
-                const container = document.getElementById("tasks");
+document.getElementById("taskForm").addEventListener("submit", async function(e) {
+  e.preventDefault();
+  let task = {
+    title: document.getElementById("title").value,
+    description: document.getElementById("description").value,
+    priority: document.getElementById("priority").value,
+    due_date: document.getElementById("dueDate").value
+  };
+  await fetch(API_URL + "/tasks", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(task)
+  });
+  e.target.reset();
+  loadTasks();
+});
 
-                container.innerHTML = data.map(task => `
-                    <div class="task">
-                        <h3>${task.title}</h3>
-                        <p>${task.description || "No description"}</p>
-                        <div class="meta">
-                            Status: ${task.status} | Priority: ${task.priority}
-                            ${task.due_date ? ` | Due: ${task.due_date}` : ""}
-                        </div>
-                        <button onclick="deleteTask(${task.id})">Delete</button>
-                    </div>
-                `).join("");
-            } catch (error) {
-                document.getElementById("tasks").innerHTML = "<p>Unable to connect to the API.</p>";
-                console.error(error);
-            }
-        }
+document.getElementById("search").addEventListener("input", loadTasks);
+document.getElementById("filterStatus").addEventListener("change", loadTasks);
+document.getElementById("filterPriority").addEventListener("change", loadTasks);
+document.getElementById("sortBy").addEventListener("change", loadTasks);
 
-        async function deleteTask(id) {
-            await fetch(`${API_URL}/tasks/${id}`, { method: "DELETE" });
-            loadTasks();
-        }
+loadTasks();
+</script>
 
-        document.getElementById("search").addEventListener("input", loadTasks);
-        document.getElementById("filterStatus").addEventListener("change", loadTasks);
-        document.getElementById("filterPriority").addEventListener("change", loadTasks);
-        document.getElementById("sortBy").addEventListener("change", loadTasks);
-
-        loadTasks();
-    </script>
 </body>
 </html>

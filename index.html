@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Manager</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 0 20px; }
+        h1 { margin-bottom: 20px; }
+        .filters { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        input, select, button { padding: 10px; border: 1px solid #ccc; border-radius: 6px; }
+        .task { border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin: 10px 0; }
+        .task h3 { margin: 0 0 8px; }
+        .meta { font-size: 14px; margin-bottom: 10px; }
+        button { cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Task Manager</h1>
+
+    <div class="filters">
+        <input id="search" type="text" placeholder="Search tasks...">
+        <select id="filterStatus">
+            <option value="">All statuses</option>
+            <option value="todo">To Do</option>
+            <option value="in_progress">In Progress</option>
+            <option value="done">Done</option>
+        </select>
+        <select id="filterPriority">
+            <option value="">All priorities</option>
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+        </select>
+        <select id="sortBy">
+            <option value="created_at">Created</option>
+            <option value="title">Title</option>
+            <option value="due_date">Due Date</option>
+            <option value="priority">Priority</option>
+        </select>
+    </div>
+
+    <div id="tasks"></div>
+
+    <script>
+        const API_URL = "http://127.0.0.1:8000";
+
+        function getFilters() {
+            const params = new URLSearchParams();
+
+            const search = document.getElementById("search").value;
+            const status = document.getElementById("filterStatus").value;
+            const priority = document.getElementById("filterPriority").value;
+            const sortBy = document.getElementById("sortBy").value;
+
+            if (search) params.append("search", search);
+            if (status) params.append("status", status);
+            if (priority) params.append("priority", priority);
+            if (sortBy) params.append("sort_by", sortBy);
+
+            return params.toString();
+        }
+
+        async function loadTasks() {
+            try {
+                const res = await fetch(API_URL + "/tasks?" + getFilters());
+                const data = await res.json();
+                const container = document.getElementById("tasks");
+
+                container.innerHTML = data.map(task => `
+                    <div class="task">
+                        <h3>${task.title}</h3>
+                        <p>${task.description || "No description"}</p>
+                        <div class="meta">
+                            Status: ${task.status} | Priority: ${task.priority}
+                            ${task.due_date ? ` | Due: ${task.due_date}` : ""}
+                        </div>
+                        <button onclick="deleteTask(${task.id})">Delete</button>
+                    </div>
+                `).join("");
+            } catch (error) {
+                document.getElementById("tasks").innerHTML = "<p>Unable to connect to the API.</p>";
+                console.error(error);
+            }
+        }
+
+        async function deleteTask(id) {
+            await fetch(`${API_URL}/tasks/${id}`, { method: "DELETE" });
+            loadTasks();
+        }
+
+        document.getElementById("search").addEventListener("input", loadTasks);
+        document.getElementById("filterStatus").addEventListener("change", loadTasks);
+        document.getElementById("filterPriority").addEventListener("change", loadTasks);
+        document.getElementById("sortBy").addEventListener("change", loadTasks);
+
+        loadTasks();
+    </script>
+</body>
+</html>

@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from routers import tasks
 
-app = FastAPI(title="Task Manager API")
+app = FastAPI(title="Task Manager API" , version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,

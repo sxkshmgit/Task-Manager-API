@@ -17,7 +17,7 @@ class Status(str, Enum):
 
 
 class TaskBase(BaseModel):
-    title: str = Field(..., min_length=1, max_length=200)
+    title: str = Field(..., min_length=3, max_length=200)
     description: Optional[str] = Field(None, max_length=1000)
     priority: Priority = Priority.medium
     status: Status = Status.todo

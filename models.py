@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field
 
 
 class Priority(str, Enum):
@@ -40,3 +40,10 @@ class Task(TaskBase):
     id: int
     created_at: str
     updated_at: str
+class UserCreate(BaseModel):
+    username: str = Field(..., min_length=3, max_length=50)
+    email: EmailStr
+
+
+class User(UserCreate):
+    id: int

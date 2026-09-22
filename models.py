@@ -40,6 +40,9 @@ class Task(TaskBase):
     id: int
     created_at: str
     updated_at: str
+class TaskHeaders(BaseModel):
+    x_client_version: Optional[str] = Field(None, alias="X-Client-Version")
+    x_request_id: Optional[str] = Field(None, alias="X-Request-ID")
 class UserCreate(BaseModel):
     username: str = Field(..., min_length=3, max_length=50)
     email: EmailStr

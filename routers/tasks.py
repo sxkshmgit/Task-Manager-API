@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, HTTPException, Header , Depends
+from fastapi import APIRouter, HTTPException, Header , Depends , Query
 
 from models import Task, TaskCreate, TaskUpdate, Priority, Status, TaskHeaders
 
@@ -23,6 +23,8 @@ def get_tasks(
     status: Optional[Status] = None,
     priority: Optional[Priority] = None,
     headers: Annotated[TaskHeaders, Header()] = None,
+    page: int = Query(1, ge=1),
+    limit: int = Query(10, ge=1),
 ):
     result = list(tasks.values())
 
@@ -37,6 +39,8 @@ def get_tasks(
 
     if params["sort_by"] in ["title", "due_date", "priority", "created_at"]:
         result.sort(key=lambda t: getattr(t, params["sort_by"]) or "")
+    start = (page - 1) * limit
+    result = result[start:start + limit]
 
     return result
 

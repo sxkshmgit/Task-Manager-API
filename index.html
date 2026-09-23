@@ -100,6 +100,7 @@
     <option value="hard">Hard</option>
   </select>
   <textarea id="fb-text" placeholder="Your feedback..." required></textarea>
+  <input type="file" id="fb-file">
   <button type="submit">Submit Feedback</button>
 </form>
 <pre id="fb-result"></pre>
@@ -270,7 +271,10 @@ document.getElementById("feedback-form").addEventListener("submit", async e => {
   formData.append("rating", document.getElementById("fb-rating").value);
   formData.append("difficulty", document.getElementById("fb-difficulty").value);
   formData.append("feedback", document.getElementById("fb-text").value);
-
+  const fileInput = document.getElementById("fb-file");
+if (fileInput.files[0]) {
+  formData.append("attachment", fileInput.files[0]);
+}
   const res = await fetch(`${API_URL}/feedback`, {
     method: "POST",
     body: formData

@@ -1,19 +1,24 @@
 # Task Manager API
 
-A full-stack Task Manager built to practice **Python, FastAPI, Pydantic, REST APIs, CRUD operations, validation, filtering, sorting, and CORS**.
+A full-stack Task Manager built with **Python, FastAPI, Pydantic, REST APIs, CRUD operations, validation, filtering, sorting, headers, form handling, file uploads, and CORS**.
 
 ## Features
 
 - Create, read, update, partially update, and delete tasks
-- Pydantic request/response validation
+- Pydantic request and response validation
 - Task status and priority enums
 - Search tasks by title
-- Filter by status and priority
-- Sort by title, due date, priority, or creation time
-- Automatic creation and update timestamps
+- Filter tasks by status and priority
+- Sort tasks by title, due date, priority, or creation time
+- Automatic task creation and update timestamps
 - HTTP error handling with `HTTPException`
+- Header parameters and reusable header models
+- User creation endpoint with Pydantic validation
+- Task feedback endpoint using Form Data and a Pydantic Form Model
+- Optional file upload support with `UploadFile`
 - Interactive Swagger/OpenAPI documentation
-- Simple HTML/JavaScript frontend
+- HTML/CSS/JavaScript frontend with Task Feedback UI
+- CORS support for frontend-to-API requests
 
 ## Screenshots
 
@@ -35,15 +40,17 @@ Task-Manager-API/
 ├── screenshots/
 └── routers/
     ├── __init__.py
-    └── tasks.py
+    ├── tasks.py
+    ├── users.py
+    └── feedback.py
 ```
 
 ## Run Locally
 
-Create and activate a virtual environment, then install FastAPI:
+Create and activate a virtual environment, then install the project dependencies:
 
 ```bash
-pip install "fastapi[standard]"
+pip install "fastapi[standard]" python-multipart
 ```
 
 Start the API:
@@ -78,6 +85,8 @@ http://127.0.0.1:5500/index.html
 
 ## API Endpoints
 
+### Tasks
+
 | Method | Endpoint | Purpose |
 |---|---|---|
 | GET | `/tasks` | List tasks with search/filter/sort |
@@ -86,6 +95,18 @@ http://127.0.0.1:5500/index.html
 | PUT | `/tasks/{task_id}` | Replace a task |
 | PATCH | `/tasks/{task_id}` | Partially update a task |
 | DELETE | `/tasks/{task_id}` | Delete a task |
+
+### Users
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| POST | `/users` | Create a user |
+
+### Feedback
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| POST | `/feedback` | Submit task feedback using form fields with an optional file upload |
 
 ## Tech Stack
 
@@ -96,4 +117,8 @@ http://127.0.0.1:5500/index.html
 - CSS
 - JavaScript
 
-> Note: Task data is currently stored in memory, so data is cleared when the API restarts. A database can be added as the next development step.
+## Current Storage
+
+Task and user data are currently stored **in memory**, so they are cleared when the API restarts. Feedback submissions are validated and returned by the API but are not persisted. Uploaded files are currently accepted and their filename/content type are returned, but files are not persisted to storage.
+
+A database, authentication, persistent file storage, and other production-oriented features can be added as future development steps.

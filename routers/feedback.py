@@ -1,6 +1,8 @@
 from enum import Enum
+from typing import Annotated
 
 from fastapi import APIRouter, Form
+from pydantic import BaseModel, Field
 
 router = APIRouter(prefix="/feedback", tags=["Feedback"])
 
@@ -11,16 +13,18 @@ class Difficulty(str, Enum):
     hard = "hard"
 
 
+class FeedbackForm(BaseModel):
+    task_id: int
+    rating: int = Field(..., ge=1, le=5)
+    difficulty: Difficulty
+    feedback: str = Field(..., min_length=1, max_length=1000)
+
+
 @router.post("")
-def submit_feedback(
-    task_id: int = Form(...),
-    rating: int = Form(..., ge=1, le=5),
-    difficulty: Difficulty = Form(...),
-    feedback: str = Form(..., min_length=1, max_length=1000),
-):
+def submit_feedback(form: Annotated[FeedbackForm, Form()]):
     return {
-        "task_id": task_id,
-        "rating": rating,
-        "difficulty": difficulty,
-        "feedback": feedback,
+        "task_id": form.task_id,
+        "rating": form.rating,
+        "difficulty": form.difficulty,
+        "feedback": form.feedback,
     }

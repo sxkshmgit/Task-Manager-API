@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, HTTPException, Header
+from fastapi import APIRouter, HTTPException, Header , Depends
 
 from models import Task, TaskCreate, TaskUpdate, Priority, Status, TaskHeaders
 
@@ -14,19 +14,20 @@ next_id = 1
 def now() -> str:
     return datetime.utcnow().isoformat()
 
+def common_params(search: str = "", sort_by: str = "created_at"):
+    return {"search": search, "sort_by": sort_by}
 
 @router.get("", response_model=list[Task])
 def get_tasks(
-    search: str = "",
+    params: Annotated[dict, Depends(common_params)],
     status: Optional[Status] = None,
     priority: Optional[Priority] = None,
-    sort_by: str = "created_at",
     headers: Annotated[TaskHeaders, Header()] = None,
 ):
     result = list(tasks.values())
 
-    if search:
-        result = [t for t in result if search.lower() in t.title.lower()]
+    if params["search"]:
+        result = [t for t in result if params["search"].lower() in t.title.lower()]
 
     if status:
         result = [t for t in result if t.status == status]
@@ -34,8 +35,8 @@ def get_tasks(
     if priority:
         result = [t for t in result if t.priority == priority]
 
-    if sort_by in ["title", "due_date", "priority", "created_at"]:
-        result.sort(key=lambda t: getattr(t, sort_by) or "")
+    if params["sort_by"] in ["title", "due_date", "priority", "created_at"]:
+        result.sort(key=lambda t: getattr(t, params["sort_by"]) or "")
 
     return result
 

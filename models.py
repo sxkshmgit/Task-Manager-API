@@ -1,8 +1,8 @@
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel, EmailStr, Field
-
+from pydantic import BaseModel, EmailStr, Field as PydanticField
+from sqlmodel import SQLModel, Field
 
 class Priority(str, Enum):
     low = "low"
@@ -43,10 +43,21 @@ class Task(TaskBase):
 class TaskHeaders(BaseModel):
     x_client_version: Optional[str] = Field(None, alias="X-Client-Version")
     x_request_id: Optional[str] = Field(None, alias="X-Request-ID")
-class UserCreate(BaseModel):
-    username: str = Field(..., min_length=3, max_length=50)
+class UserBase(SQLModel):
+    username: str = Field(min_length=3, max_length=50)
     email: EmailStr
 
 
-class User(UserCreate):
+class UserCreate(UserBase):
+    password: str = PydanticField(..., min_length=8)
+
+
+class User(UserBase, table=True):
+    __tablename__ = "users"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    hashed_password: str
+
+
+class UserRead(UserBase):
     id: int

@@ -1,9 +1,10 @@
 from datetime import datetime
 from typing import Annotated, Optional
+from routers.users import get_current_user
 
 from fastapi import APIRouter, HTTPException, Header , Depends , Query
 
-from models import Task, TaskCreate, TaskUpdate, Priority, Status, TaskHeaders
+from models import Task, TaskCreate, TaskUpdate, Priority, Status, TaskHeaders , User
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
@@ -20,6 +21,7 @@ def common_params(search: str = "", sort_by: str = "created_at"):
 @router.get("", response_model=list[Task])
 def get_tasks(
     params: Annotated[dict, Depends(common_params)],
+    current_user: Annotated[User, Depends(get_current_user)],
     status: Optional[Status] = None,
     priority: Optional[Priority] = None,
     headers: Annotated[TaskHeaders, Header()] = None,
@@ -46,7 +48,11 @@ def get_tasks(
 
 
 @router.get("/{task_id}", response_model=Task)
-def get_task(task_id: int, headers: Annotated[TaskHeaders, Header()] = None):
+def get_task(
+    task_id: int,
+    current_user: Annotated[User, Depends(get_current_user)],
+    headers: Annotated[TaskHeaders, Header()] = None,
+):
     task = tasks.get(task_id)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
@@ -54,7 +60,11 @@ def get_task(task_id: int, headers: Annotated[TaskHeaders, Header()] = None):
 
 
 @router.post("", response_model=Task, status_code=201)
-def create_task(task: TaskCreate, headers: Annotated[TaskHeaders, Header()] = None):
+def create_task(
+    task: TaskCreate,
+    current_user: Annotated[User, Depends(get_current_user)],
+    headers: Annotated[TaskHeaders, Header()] = None,
+):
     global next_id
     new_task = Task(id=next_id, created_at=now(), updated_at=now(), **task.dict())
     tasks[next_id] = new_task
@@ -63,7 +73,12 @@ def create_task(task: TaskCreate, headers: Annotated[TaskHeaders, Header()] = No
 
 
 @router.put("/{task_id}", response_model=Task)
-def update_task(task_id: int, task: TaskCreate, headers: Annotated[TaskHeaders, Header()] = None):
+def update_task(
+    task_id: int,
+    task: TaskCreate,
+    current_user: Annotated[User, Depends(get_current_user)],
+    headers: Annotated[TaskHeaders, Header()] = None,
+):
     if task_id not in tasks:
         raise HTTPException(status_code=404, detail="Task not found")
     existing = tasks[task_id]
@@ -73,7 +88,12 @@ def update_task(task_id: int, task: TaskCreate, headers: Annotated[TaskHeaders, 
 
 
 @router.patch("/{task_id}", response_model=Task)
-def patch_task(task_id: int, changes: TaskUpdate, headers: Annotated[TaskHeaders, Header()] = None):
+def patch_task(
+    task_id: int,
+    changes: TaskUpdate,
+    current_user: Annotated[User, Depends(get_current_user)],
+    headers: Annotated[TaskHeaders, Header()] = None,
+):
     if task_id not in tasks:
         raise HTTPException(status_code=404, detail="Task not found")
     data = tasks[task_id].dict()
@@ -85,7 +105,11 @@ def patch_task(task_id: int, changes: TaskUpdate, headers: Annotated[TaskHeaders
 
 
 @router.delete("/{task_id}")
-def delete_task(task_id: int, headers: Annotated[TaskHeaders, Header()] = None):
+def delete_task(
+    task_id: int,
+    current_user: Annotated[User, Depends(get_current_user)],
+    headers: Annotated[TaskHeaders, Header()] = None,
+):
     if task_id not in tasks:
         raise HTTPException(status_code=404, detail="Task not found")
     del tasks[task_id]

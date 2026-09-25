@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
-
+import os
 import jwt
 from fastapi import APIRouter, Depends, HTTPException, status
 from pwdlib import PasswordHash
@@ -9,13 +9,17 @@ from sqlmodel import select
 from database import SessionDep
 from models import User, UserCreate, UserRead
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from dotenv import load_dotenv
 
+load_dotenv()
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
 password_hash = PasswordHash.recommended()
 
-SECRET_KEY = "CHANGE_THIS_TO_A_RANDOM_SECRET_IN_PRODUCTION"
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError("SECRET_KEY environment variable is not set")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 

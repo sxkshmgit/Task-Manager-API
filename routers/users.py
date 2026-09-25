@@ -8,7 +8,7 @@ from sqlmodel import select
 
 from database import SessionDep
 from models import User, UserCreate, UserRead
-from fastapi.security import OAuth2PasswordBearer,OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 
 router = APIRouter(prefix="/users", tags=["Users"])
@@ -90,3 +90,8 @@ def get_current_user(
         raise credentials_exception
 
     return user
+
+
+@router.get("/me", response_model=UserRead)
+def read_current_user(current_user: Annotated[User, Depends(get_current_user)]):
+    return current_user

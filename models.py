@@ -1,4 +1,5 @@
 from enum import Enum
+from datetime import datetime
 from typing import Optional
 
 from pydantic import BaseModel, EmailStr, Field as PydanticField
@@ -16,7 +17,7 @@ class Status(str, Enum):
     done = "done"
 
 
-class TaskBase(BaseModel):
+class TaskBase(SQLModel):
     title: str = Field(..., min_length=3, max_length=200)
     description: Optional[str] = Field(None, max_length=1000)
     priority: Priority = Priority.medium
@@ -28,7 +29,7 @@ class TaskCreate(TaskBase):
     pass
 
 
-class TaskUpdate(BaseModel):
+class TaskUpdate(SQLModel):
     title: Optional[str] = Field(None, min_length=1, max_length=200)
     description: Optional[str] = Field(None, max_length=1000)
     priority: Optional[Priority] = None
@@ -36,10 +37,13 @@ class TaskUpdate(BaseModel):
     due_date: Optional[str] = None
 
 
-class Task(TaskBase):
-    id: int
+class Task(TaskBase, table=True):
+    __tablename__ = "tasks"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
     created_at: str
     updated_at: str
+    
 class TaskHeaders(BaseModel):
     x_client_version: Optional[str] = Field(None, alias="X-Client-Version")
     x_request_id: Optional[str] = Field(None, alias="X-Request-ID")
